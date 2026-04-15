@@ -1,5 +1,5 @@
 {
-  "name": "kommuna/memcached",
+  "name": "dadmin/memcached",
   "description": "Multi-thread Memcached PHP wrapper",
   "minimum-stability": "dev",
   "license": "LGPL",
