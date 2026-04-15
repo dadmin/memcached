@@ -1,5 +1,5 @@
 {
-  "name": "kommuna/memcached",
+  "name": "dadmin/memcached",
   "description": "Multi-thread Memcached PHP wrapper",
   "minimum-stability": "dev",
   "license": "LGPL",
@@ -8,17 +8,6 @@
       "name": "l80"
     }
   ],
-
-  "repositories": [
-    {
-      "type": "vcs",
-      "url": "git@github.com:alebedev80/PinbaTrait.git"
-    }
-  ],
-
-  "require-dev": {
-    "alebedev80/PinbaTrait": "dev-master"
-  },
 
   "autoload": {
     "psr-4": {
