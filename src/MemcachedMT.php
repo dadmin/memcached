@@ -1,20 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Kommuna;
 
 use \Memcached;
-use PinbaTrait\PinbaTrait;
 
 class MemcachedMT {
 
-    use PinbaTrait;
+    public ?Memcached $memcached = null;
 
-    public $memcached;
-
-
-    protected static $instance;
-    protected static $connectionRetry = 0;
-    protected static $fatalCodes = [
+    protected static int $connectionRetry = 0;
+    protected static array $fatalCodes = [
         Memcached::RES_ERRNO,
         Memcached::RES_TIMEOUT,
         Memcached::RES_HOST_LOOKUP_FAILURE,
@@ -24,31 +21,28 @@ class MemcachedMT {
         47, // MEMCACHED_SERVER_TEMPORARILY_DISABLED
     ];
 
-    protected static $settings = [];
+    protected static array $settings = [];
 
-    public function __construct($settings) {
+    public function __construct(array $settings) {
         self::$settings = $settings;
-        self::init(!empty($settings['pinba']) ? $settings['pinba'] : null);
         $this->connect();
     }
 
-    protected static function increaseConnectionRetry() {
+    protected static function increaseConnectionRetry(): void {
 
-        self::$connectionRetry =+1;
+        self::$connectionRetry++;
 
-        if(self::$connectionRetry > 10) {
+        if (self::$connectionRetry > 10) {
             throw new \Exception("Count of failed memcached connections > 10");
         }
 
     }
 
-    protected function connect($reconectFlag = false) {
-
-        $pinba = self::pinba_timer_start('connect');
+    protected function connect(bool $reconectFlag = false): void {
 
         $settings = self::$settings;
 
-        if($reconectFlag) {
+        if ($reconectFlag) {
             $this->memcached->quit();
         }
 
@@ -70,7 +64,6 @@ class MemcachedMT {
             }
         }
 
-
         if ($reconectFlag) {
 
             $memcache->resetServerList();
@@ -91,52 +84,33 @@ class MemcachedMT {
 
         self::increaseConnectionRetry();
 
-        self::pinba_timer_stop($pinba);
-
         $this->memcached = $memcache;
 
     }
 
-    public function set($key, $value, $ttl) {
-
-        $pinba = self::pinba_timer_start('set');
+    public function set(string $key, mixed $value, int $ttl): bool {
 
         $result = $this->memcached->set($key, $value, $ttl);
 
-        if(in_array($this->memcached->getResultCode(), self::$fatalCodes)) {
+        if (in_array($this->memcached->getResultCode(), self::$fatalCodes)) {
 
             $this->connect(true);
             $result = $this->set($key, $value, $ttl);
 
         }
-        self::pinba_timer_stop($pinba);
 
         return $result;
     }
 
-    public function get($key) {
-
-        $pinba = self::pinba_timer_start('get');
-
-        $result = $this->memcached->get($key);
-        self::pinba_timer_stop($pinba);
-
-        return $result;
+    public function get(string $key): mixed {
+        return $this->memcached->get($key);
     }
 
-    public function delete($key, $time = 0) {
-
-        $pinba = self::pinba_timer_start('delete');
-
-        $result = $this->memcached->delete($key, $time);
-
-        self::pinba_timer_stop($pinba);
-
-        return $result;
-
+    public function delete(string $key, int $time = 0): bool {
+        return $this->memcached->delete($key, $time);
     }
 
-    public function resultNotFound() {
+    public function resultNotFound(): bool {
         return $this->memcached->getResultCode() === Memcached::RES_NOTFOUND;
     }
 
